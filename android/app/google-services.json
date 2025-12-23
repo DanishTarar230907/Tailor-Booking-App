@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "191882073146",
+    "project_id": "grace-9bb55",
+    "storage_bucket": "grace-9bb55.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:191882073146:android:3feb3b7e0204686a5f5103",
+        "android_client_info": {
+          "package_name": "com.gracetailor.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "191882073146-stohbkg96k6e3pv0ker65sv3qugsi4pe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8GjaHHLxGq-05K2m26al9DGmNuc6raT8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "191882073146-stohbkg96k6e3pv0ker65sv3qugsi4pe.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "191882073146-fbe4qncspicbhfm6lthpgg98okmut5s1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gracetailor.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:191882073146:android:2c630688441052e65f5103",
+        "android_client_info": {
+          "package_name": "com.yourcompany.grace"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "191882073146-stohbkg96k6e3pv0ker65sv3qugsi4pe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8GjaHHLxGq-05K2m26al9DGmNuc6raT8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "191882073146-stohbkg96k6e3pv0ker65sv3qugsi4pe.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "191882073146-fbe4qncspicbhfm6lthpgg98okmut5s1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gracetailor.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
