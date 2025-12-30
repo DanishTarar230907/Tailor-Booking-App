@@ -108,15 +108,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   prefixIcon: Icon(Icons.email),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
+                validator: AppValidators.validateEmail,
               ),
             ],
           ),
@@ -134,9 +126,13 @@ class _AuthScreenState extends State<AuthScreen> {
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password reset email sent! Check your inbox.'),
+                      SnackBar(
+                        content: Text(
+                          '✅ Password reset email sent successfully!\n'
+                          'Please check your inbox and click the link to reset your password.',
+                        ),
                         backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 5),
                       ),
                     );
                   }

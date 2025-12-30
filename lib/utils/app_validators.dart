@@ -19,11 +19,16 @@ class AppValidators {
   // Email Validator
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Email is required';
+      return '❌ Email is required. Please enter your email address.';
+    }
+    
+    // Check if email contains alphabets
+    if (!value.contains(RegExp(r'[a-zA-Z]'))) {
+      return '❌ Email must contain alphabetic characters (e.g., user@example.com)';
     }
     // 1. Basic format check
     if (!_emailRegex.hasMatch(value)) {
-      return 'Enter a valid email address';
+      return '❌ Invalid email format. Please use format: example@domain.com';
     }
     
     // 2. Custom Strict Rule: Removed to allow standard emails
@@ -35,22 +40,22 @@ class AppValidators {
   // Password Validator (Strict Google-like)
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password is required';
+      return '❌ Password is required. Please create a strong password.';
     }
     if (value.length < 8) {
-      return 'Password must be at least 8 characters';
+      return '❌ Password must be at least 8 characters long (currently ${value.length} characters)';
     }
     if (!value.contains(RegExp(r'[A-Z]'))) {
-      return 'Password must contain at least one uppercase letter';
+      return '❌ Password must contain at least one UPPERCASE letter (A-Z)';
     }
     if (!value.contains(RegExp(r'[a-z]'))) {
-      return 'Password must contain at least one lowercase letter';
+      return '❌ Password must contain at least one lowercase letter (a-z)';
     }
     if (!value.contains(RegExp(r'[0-9]'))) {
-      return 'Password must contain at least one number';
+      return '❌ Password must contain at least one number (0-9)';
     }
     if (!value.contains(RegExp(r'[!@#\$&*~]'))) {
-      return 'Password must contain at least one special character (!@#\$&*~)';
+      return '❌ Password must contain at least one special character (!@#\$&*~)';
     }
     return null;
   }
@@ -58,13 +63,13 @@ class AppValidators {
   // Name Validator
   static String? validateName(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Name is required';
+      return '❌ Name is required. Please enter your full name.';
     }
     if (!_nameRegex.hasMatch(value)) {
-      return 'Name must contain alphabets only';
+      return '❌ Name must contain only alphabets (A-Z, a-z). Numbers and special characters are not allowed.';
     }
     if (value.length < 3) {
-      return 'Name is too short';
+      return '❌ Name is too short. Please enter at least 3 characters.';
     }
     return null;
   }
