@@ -96,6 +96,30 @@ class AuthService {
     return email.trim().toLowerCase() == adminEmail.toLowerCase();
   }
 
+  Future<bool> checkUserExists(String email) async {
+    try {
+      final cleanEmail = email.trim().toLowerCase();
+      // Search in Firestore - handling both exact and potential case mismatches locally for safety
+      final snapshot = await _firestore
+          .collection('users')
+          .get(); // Fetch all is safe for this scale (simulated constraint) or use query
+          
+      // Optimized query if collection was large:
+      // final query = await _firestore.collection('users').where('email', isEqualTo: cleanEmail).get();
+      
+      // Using manual iteration to be robust against casing legacy data
+      final exists = snapshot.docs.any((doc) {
+        final storedEmail = (doc.data()['email'] as String?)?.trim().toLowerCase();
+        return storedEmail == cleanEmail;
+      });
+      
+      return exists;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error checking user existence: $e');
+      return false;
+    }
+  }
+
   Future<UserCredential?> signUp({
     required String email,
     required String password,

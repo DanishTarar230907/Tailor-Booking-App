@@ -538,7 +538,7 @@ class _TailorDashboardState extends State<TailorDashboard>
                   const SizedBox(width: 4),
                   _buildNavItem(4, Icons.local_shipping, 'Pickup'),
                   const SizedBox(width: 4),
-                  _buildNavItem(5, Icons.forum, 'Complaints'),
+                  _buildNavItem(5, Icons.forum, 'Support'),
                 ],
               ),
             ),

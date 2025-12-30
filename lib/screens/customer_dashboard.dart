@@ -556,7 +556,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
           NavigationDestination(
             icon: Icon(Icons.forum_outlined),
             selectedIcon: Icon(Icons.forum),
-            label: 'Complaints',
+            label: 'Support',
           ),
         ],
       ),

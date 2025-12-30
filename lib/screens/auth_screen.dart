@@ -157,6 +157,20 @@ class _AuthScreenState extends State<AuthScreen> {
                 final password = newPasswordController.text.trim();
 
                 if (step == 1) {
+                  // Verify if account exists before proceeding
+                  final exists = await _authService.checkUserExists(email);
+                  if (!exists) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Account not found with this email.'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                    return;
+                  }
                   setStateDialog(() => step = 2);
                 } else {
                   try {
@@ -331,7 +345,7 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               Container(padding: const EdgeInsets.all(8), decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Image.network('https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg', height: 24, width: 24)),
               const SizedBox(width: 8),
-              const Text('Continue with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4285F4))),
+              const Text('Register and Login with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4285F4))),
             ],
           ),
         ),
