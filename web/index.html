@@ -21,7 +21,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
-  <!-- Prevent caching of the entry point -->
+  <!-- NUCLEAR CACHE BUSTING -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -80,7 +80,7 @@
       document.head.appendChild(script);
     })();
 
-    // Helper to unregister all service workers to force update
+    // Helper to KILL ALL service workers (The cause of caching issues)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (registrations) {
         for (let registration of registrations) {
@@ -90,7 +90,8 @@
       });
     }
   </script>
-  <script src="flutter_bootstrap.js?v=1.1.0" async></script>
+  <!-- TIMESTAMP VERSIONING TO FORCE RELOAD -->
+  <script src="flutter_bootstrap.js?v=Build_20251230_1652" async></script>
 </body>
 
 </html>
