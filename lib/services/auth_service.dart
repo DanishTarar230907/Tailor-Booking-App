@@ -6,9 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: '191882073146-stohbkg96k6e3pv0ker65sv3qugsi4pe.apps.googleusercontent.com',
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Admin email - change this to your desired admin email
   static const String adminEmail = 'admin@gracetailor.com';
