@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/booking.dart';
 
@@ -87,11 +88,37 @@ class FirestoreBookingsService {
   }
 
   Stream<List<Booking>> streamAllBookings() {
-    return _collection
+    final controller = StreamController<List<Booking>>();
+    StreamSubscription? sub;
+
+    void startFallback() {
+      sub = _collection.snapshots().listen(
+        (snap) {
+          final list = snap.docs.map(_fromDoc).toList();
+          list.sort((a, b) => b.bookingDate.compareTo(a.bookingDate));
+          controller.add(list);
+        },
+        onError: (e) => controller.addError(e),
+        onDone: () => controller.close(),
+      );
+    }
+
+    sub = _collection
         .orderBy('bookingDate')
         .orderBy('timeSlot')
         .snapshots()
-        .map((snap) => snap.docs.map(_fromDoc).toList());
+        .listen(
+          (snap) => controller.add(snap.docs.map(_fromDoc).toList()),
+          onError: (e) {
+            print('Bookings Stream Index Error, falling back: $e');
+            sub?.cancel();
+            startFallback();
+          },
+          onDone: () => controller.close(),
+        );
+
+    controller.onCancel = () => sub?.cancel();
+    return controller.stream;
   }
 
   Future<int> getBookingsCountForDate(DateTime date) async {

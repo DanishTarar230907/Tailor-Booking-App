@@ -9,6 +9,7 @@ import '../status_badge.dart';
 import '../request_measurement_dialog.dart';
 import '../measurement_receipt.dart';
 import '../../theme/app_theme.dart';
+import '../../services/auth_service.dart';
 
 class CustomerMeasurementsTab extends StatefulWidget {
   final Tailor? tailor;
@@ -37,6 +38,7 @@ class CustomerMeasurementsTab extends StatefulWidget {
 class _CustomerMeasurementsTabState extends State<CustomerMeasurementsTab> {
   final FirestoreMeasurementsService _measurementsService = FirestoreMeasurementsService();
   final FirestoreMeasurementRequestsService _requestsService = FirestoreMeasurementRequestsService();
+  final AuthService _authService = AuthService();
 
   void _showRequestMeasurementDialog() {
     showDialog(
@@ -70,18 +72,192 @@ class _CustomerMeasurementsTabState extends State<CustomerMeasurementsTab> {
     );
   }
 
+  void _showEditMeasurementDialog(String part, double currentVal) {
+    final controller = TextEditingController(text: currentVal.toString());
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.straighten, color: Colors.blue, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Update $part',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Request measurement change',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Info box
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18, color: Colors.blue[700]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Enter new measurement (in inches). The tailor will review this request.',
+                          style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Input field
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    labelText: 'New $part Measurement',
+                    suffixText: 'inches',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    prefixIcon: const Icon(Icons.edit, color: Colors.blue),
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final newVal = double.tryParse(controller.text);
+                          if (newVal == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please enter a valid number')),
+                            );
+                            return;
+                          }
+                          
+                          Navigator.pop(context);
+                          
+                          final req = MeasurementRequest(
+                            customerId: _authService.currentUser?.uid ?? 'unknown',
+                            tailorId: widget.tailor?.docId ?? '',
+                            customerName: widget.customerName ?? 'Customer',
+                            customerEmail: widget.customerEmail ?? '',
+                            customerPhone: widget.customerPhone ?? '',
+                            requestType: 'renewal',
+                            status: 'pending',
+                            notes: 'Please update $part to $newVal inches.',
+                          );
+
+                          await _requestsService.addRequest(req);
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Text('Update request for $part sent to tailor!'),
+                                  ],
+                                ),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.send, size: 18),
+                            SizedBox(width: 8),
+                            Text('Send Request', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
   void _showUpdateMeasurementsDialog(Measurement m) {
-    // Basic dialog implementation or placeholder if original was too complex to extract blindly
-    // For now, using a simplified version or assuming RequestMeasurementDialog covers it if logic similar?
-    // The original code called _showUpdateMeasurementsDialog which was a separate method. 
-    // I will implement a placeholder that notifies user or uses the same request dialog if appropriate.
-    // Actually, let's implement the update logic directly here if it's just updating values.
-    // But since I don't see the full body of _showUpdateMeasurementsDialog in the snippets, I'll use a placeholder/TODO.
-    // Wait, I saw _showRequestMeasurementDialog but not _showUpdateMeasurementsDialog fully.
-    
-    // Fallback: Notify user to contact tailor for updates if logic is missing.
+    // This was previously a placeholder, redirecting to the general list interaction
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('To update specific values, please request a new measurement.')),
+      const SnackBar(content: Text('Click on any measurement part below to request a change.')),
     );
   }
 
@@ -273,25 +449,38 @@ class _CustomerMeasurementsTabState extends State<CustomerMeasurementsTab> {
             // Measurement List
             Column(
               children: displayed.entries.map((e) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50], // Very light grey
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        e.key,
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-                      ),
-                      Text(
-                        '${e.value} In',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                      ),
-                    ],
+                return InkWell(
+                  onTap: () {
+                    _showEditMeasurementDialog(e.key, e.value);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50], // Very light grey
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.transparent),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.edit_outlined, size: 14, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            Text(
+                              e.key,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${e.value} In',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),

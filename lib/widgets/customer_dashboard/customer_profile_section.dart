@@ -11,6 +11,10 @@ class CustomerProfileSection extends StatelessWidget {
   final String? customerPhone;
   final String? customerWhatsapp;
   final String? customerEmail;
+  final int bookingCount;
+  final int designCount;
+  final int complaintCount;
+  final int pickupCount;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
   final Function(int) onNavigateToTab;
@@ -22,6 +26,10 @@ class CustomerProfileSection extends StatelessWidget {
     required this.customerPhone,
     required this.customerWhatsapp,
     required this.customerEmail,
+    required this.bookingCount,
+    required this.designCount,
+    required this.complaintCount,
+    required this.pickupCount,
     required this.onEditProfile,
     required this.onLogout,
     required this.onNavigateToTab,
@@ -37,10 +45,34 @@ class CustomerProfileSection extends StatelessWidget {
       infoChips: [
         if (customerPhone != null && customerPhone!.isNotEmpty)
            _buildInfoChip(Icons.phone, customerPhone!, Colors.grey[100]!, Colors.grey[600]!, Colors.grey[800]!),
-        if (customerWhatsapp != null && customerWhatsapp!.isNotEmpty)
-           _buildInfoChip(Icons.chat_bubble, customerWhatsapp!, Colors.green.withOpacity(0.1), Colors.green, Colors.green[700]!),
         if (customerEmail != null)
            _buildInfoChip(Icons.email, customerEmail!, Colors.grey[100]!, Colors.grey[600]!, Colors.grey[800]!),
+      ],
+      quickActions: [
+        ProfileQuickAction(
+          icon: Icons.calendar_today,
+          label: '$bookingCount Bookings',
+          color: Colors.blue,
+          onTap: () => onNavigateToTab(2),
+        ),
+        ProfileQuickAction(
+          icon: Icons.checkroom,
+          label: '$designCount Designs',
+          color: Colors.purple,
+          onTap: () => onNavigateToTab(1),
+        ),
+        ProfileQuickAction(
+          icon: Icons.forum,
+          label: '$complaintCount Issues',
+          color: Colors.orange,
+          onTap: () => onNavigateToTab(5),
+        ),
+        ProfileQuickAction(
+          icon: Icons.local_shipping,
+          label: '$pickupCount Pickups',
+          color: Colors.green,
+          onTap: () => onNavigateToTab(4),
+        ),
       ],
       extraContent: Column(
         children: [

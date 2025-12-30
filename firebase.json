@@ -1,1 +1,63 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"grace-9bb55","configurations":{"web":"1:191882073146:web:940c021624908bf05f5103"}}},"android":{"default":{"projectId":"grace-9bb55","appId":"1:191882073146:android:2c630688441052e65f5103","fileOutput":"android/app/google-services.json"}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "grace-9bb55",
+          "configurations": {
+            "web": "1:191882073146:web:940c021624908bf05f5103"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "grace-9bb55",
+          "appId": "1:191882073146:android:2c630688441052e65f5103",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "source": "/**/*.@(js|css|gen.js|mjs)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -17,6 +17,7 @@ import '../models/complaint.dart' as models;
 import '../models/faq_item.dart';
 import '../models/notification.dart';
 import '../models/measurement_request.dart'; // Added
+import '../utils/app_validators.dart';
 
 import 'measurements_screen.dart';
 import 'pickup_request_screen.dart';
@@ -58,6 +59,7 @@ import '../theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/announcement_card.dart';
 import '../widgets/app_footer.dart';
+import '../widgets/animated_sewing_loader.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -377,21 +379,27 @@ class _CustomerDashboardState extends State<CustomerDashboard>
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading data: $e');
-      setState(() => _isLoading = false);
+      debugPrint('🚨 ERROR LOADING CUSTOMER DASHBOARD DATA: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading data: ${e.toString().split(':').last.trim()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _loadData),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).colorScheme.primary,
-            ),
-          ),
+      return const Scaffold(
+        body: AnimatedSewingLoader(
+          message: 'Preparing your studio...',
         ),
       );
     }
@@ -418,24 +426,25 @@ class _CustomerDashboardState extends State<CustomerDashboard>
         elevation: 0,
         actions: [
           IconButton(
-             icon: const Icon(Icons.logout, color: Colors.white),
-             onPressed: _handleLogout,
+             icon: const Icon(Icons.notifications_none, color: Colors.white),
+             onPressed: () {
+                // Future: Notifications panel
+             },
           ),
         ],
       ),
+      drawer: _buildDrawer(),
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: IndexedStack(
           index: _selectedTabIndex,
           children: [
-            // Tab 0: Home (Profile + Stats + Announcement)
+            // Tab 0: Home (Tailor Info + Announcement)
             SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
                    CustomerTailorInfoTab(tailor: _tailor),
-                   _buildQuickStats(),
-                   // Announcement
                    if (_tailor?.announcement != null && _tailor!.announcement!.isNotEmpty)
                      Padding(
                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -447,7 +456,13 @@ class _CustomerDashboardState extends State<CustomerDashboard>
             ),
 
             // Tab 1: Designs
-            CustomerDesignsTab(designs: _designs),
+            CustomerDesignsTab(
+              designs: _designs,
+              tailor: _tailor,
+              customerName: _customerName,
+              customerEmail: _customerEmail,
+              customerPhone: _customerPhone,
+            ),
 
             // Tab 2: Bookings
             CustomerBookingsTab(
@@ -506,41 +521,28 @@ class _CustomerDashboardState extends State<CustomerDashboard>
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildNavItem(0, Icons.person, 'Profile'),
-                  const SizedBox(width: 4),
-                  _buildNavItem(1, Icons.checkroom, 'Designs'),
-                  const SizedBox(width: 4),
-                  _buildNavItem(2, Icons.calendar_today, 'Bookings'),
-                  const SizedBox(width: 4),
-                  _buildNavItem(3, Icons.straighten, 'Measure'),
-                  const SizedBox(width: 4),
-                  _buildNavItem(4, Icons.local_shipping, 'Pickup'),
-                  const SizedBox(width: 4),
-                  _buildNavItem(5, Icons.forum, 'Complaints'),
-                ],
-              ),
-            ),
-          ),
-        ),
+      bottomNavigationBar: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 360;
+          return BottomNavigationBar(
+            currentIndex: _selectedTabIndex,
+            onTap: (index) => setState(() => _selectedTabIndex = index),
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color(0xFF4F46E5),
+            unselectedItemColor: Colors.grey[600],
+            selectedFontSize: isNarrow ? 10 : 12,
+            unselectedFontSize: isNarrow ? 9 : 10,
+            iconSize: isNarrow ? 20 : 24,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.checkroom), label: 'Designs'),
+              BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Bookings'),
+              BottomNavigationBarItem(icon: Icon(Icons.straighten), label: 'Measure'),
+              BottomNavigationBarItem(icon: Icon(Icons.local_shipping), label: 'Pickup'),
+              BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Issues'),
+            ],
+          );
+        },
       ),
     );
   }
@@ -561,6 +563,162 @@ class _CustomerDashboardState extends State<CustomerDashboard>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDrawer() {
+    final activeBookings = _myBookings.where((b) => b.status != 'completed' && b.status != 'cancelled').length;
+    final pendingPickups = _myPickupRequests.where((p) => p.status != 'delivered' && p.status != 'completed').length;
+    final openComplaints = _myComplaints.where((c) => c.status.toLowerCase() != 'resolved').length;
+    final totalDesigns = _designs.length;
+
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          // Custom Header with Stats
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  children: [
+                    // Profile Row
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _openEditCustomerProfilePanel,
+                          child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: Colors.white,
+                            backgroundImage: (_customerProfilePic != null) ? _getProfileImageProvider(_customerProfilePic!) : null,
+                            child: (_customerProfilePic == null) ? const Icon(Icons.person, size: 32, color: Color(0xFF6366F1)) : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _customerName ?? 'Valued Customer',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _customerEmail ?? '',
+                                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _openEditCustomerProfilePanel,
+                          icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Stats Row
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildDrawerStat('Bookings', activeBookings, Icons.calendar_today),
+                          _buildDrawerStat('Designs', totalDesigns, Icons.checkroom),
+                          _buildDrawerStat('Issues', openComplaints, Icons.forum),
+                          _buildDrawerStat('Pickups', pendingPickups, Icons.local_shipping),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Navigation Items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerTile(0, Icons.home_outlined, 'Home'),
+                _buildDrawerTile(1, Icons.checkroom_outlined, 'Designs Library'),
+                _buildDrawerTile(2, Icons.calendar_today_outlined, 'My Bookings'),
+                _buildDrawerTile(3, Icons.straighten_outlined, 'Measurements'),
+                _buildDrawerTile(4, Icons.local_shipping_outlined, 'Pickup Requests'),
+                _buildDrawerTile(5, Icons.forum_outlined, 'Support & Complaints'),
+              ],
+            ),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () {
+               Navigator.pop(context);
+               _handleLogout();
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerStat(String label, int count, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white, size: 18),
+        const SizedBox(height: 4),
+        Text(
+          count.toString(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 10),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDrawerTile(int index, IconData icon, String title) {
+    final isSelected = _selectedTabIndex == index;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? const Color(0xFF4F46E5) : Colors.grey[700]),
+      title: Text(
+        title, 
+        style: TextStyle(
+          color: isSelected ? const Color(0xFF4F46E5) : Colors.grey[800], 
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+        )
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        setState(() => _selectedTabIndex = index);
+      },
+      selected: isSelected,
+      selectedTileColor: const Color(0xFF4F46E5).withOpacity(0.05),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );
   }
 
@@ -587,12 +745,214 @@ class _CustomerDashboardState extends State<CustomerDashboard>
   }
 
   void _openEditCustomerProfilePanel() {
-    // ... Implement logic to open profile panel or navigate to profile page ...
-    // Placeholder as original code for this panel was likely in the removed section or I missed it.
-    // I can restore it or implement a simple placeholder.
-     showDialog(context: context, builder: (context) {
-        return AlertDialog(title: const Text("Edit Profile"), content: const Text("Feature to be implemented."));
-     });
+    final nameController = TextEditingController(text: _customerName);
+    final phoneController = TextEditingController(text: _customerPhone);
+    final whatsappController = TextEditingController(text: _customerWhatsapp);
+    final _formKey = GlobalKey<FormState>();
+    XFile? selectedImage;
+    bool isUploading = false;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Material(
+            elevation: 16,
+            borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.85,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.horizontal(left: Radius.circular(30)),
+              ),
+              child: StatefulBuilder(
+                builder: (context, setPanelState) => Form(
+                  key: _formKey,
+                  child: Column(
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(24, 50, 24, 20),
+                      decoration: BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close),
+                            style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
+                          ),
+                          const SizedBox(width: 16),
+                          const Text('Edit Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            Center(
+                              child: Stack(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final image = await _imagePicker.pickImage(source: ImageSource.gallery, maxWidth: 500, imageQuality: 70);
+                                      if (image != null) setPanelState(() => selectedImage = image);
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 60,
+                                      backgroundImage: selectedImage != null 
+                                        ? (kIsWeb ? NetworkImage(selectedImage!.path) : FileImage(File(selectedImage!.path))) as ImageProvider
+                                        : (_customerProfilePic != null ? _getProfileImageProvider(_customerProfilePic!) : null),
+                                      child: (selectedImage == null && _customerProfilePic == null) ? const Icon(Icons.person, size: 60) : null,
+                                    ),
+                                  ),
+                                  Positioned(bottom: 0, right: 0, child: CircleAvatar(backgroundColor: Colors.blue, radius: 18, child: const Icon(Icons.camera_alt, color: Colors.white, size: 18))),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Activity Stats Section
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [const Color(0xFF4F46E5).withOpacity(0.1), const Color(0xFF6366F1).withOpacity(0.05)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFF4F46E5).withOpacity(0.2)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.analytics, color: const Color(0xFF4F46E5), size: 20),
+                                      const SizedBox(width: 8),
+                                      const Text('My Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5))),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildProfileStatCard('Bookings', _myBookings.where((b) => b.status != 'completed' && b.status != 'cancelled').length, Icons.calendar_today, Colors.blue)),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: _buildProfileStatCard('Designs', _designs.length, Icons.checkroom, Colors.purple)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildProfileStatCard('Complaints', _myComplaints.where((c) => c.status.toLowerCase() != 'resolved').length, Icons.forum, Colors.orange)),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: _buildProfileStatCard('Pickups', _myPickupRequests.where((p) => p.status != 'delivered' && p.status != 'completed').length, Icons.local_shipping, Colors.green)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildPanelField('Name', nameController, Icons.person, validator: AppValidators.validateName),
+                            const SizedBox(height: 16),
+                            _buildPanelField('Phone', phoneController, Icons.phone, validator: AppValidators.validatePhone, keyboardType: TextInputType.phone),
+                            const SizedBox(height: 16),
+                            _buildPanelField('WhatsApp', whatsappController, Icons.chat, validator: AppValidators.validateOptionalPhone, keyboardType: TextInputType.phone),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ElevatedButton(
+                        onPressed: isUploading ? null : () async {
+                          if (!_formKey.currentState!.validate()) return;
+                          setPanelState(() => isUploading = true);
+                          try {
+                            String? photoUrl = _customerProfilePic;
+                            if (selectedImage != null) {
+                              final bytes = await selectedImage!.readAsBytes();
+                              photoUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                            }
+                            await _authService.updateUserData(_authService.currentUser!.uid, {
+                              'name': nameController.text.trim(),
+                              'phone': phoneController.text.trim(),
+                              'whatsapp': whatsappController.text.trim(),
+                              'photoUrl': photoUrl,
+                            });
+                            await _loadUserData();
+                            if (mounted) Navigator.pop(context);
+                          } catch (e) {
+                            setPanelState(() => isUploading = false);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                        child: isUploading ? const CircularProgressIndicator(color: Colors.white) : const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, a, sa, child) => SlideTransition(position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(a), child: child),
+    );
+  }
+
+  ImageProvider? _getProfileImageProvider(String photo) {
+    if (photo.startsWith('data:')) {
+      final parts = photo.split(',');
+      if (parts.length > 1) {
+        return MemoryImage(base64Decode(parts[1]));
+      }
+    }
+    return CachedNetworkImageProvider(photo);
+  }
+
+  Widget _buildPanelField(String label, TextEditingController controller, IconData icon, {String? Function(String?)? validator, TextInputType? keyboardType}) {
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), border: const OutlineInputBorder()),
+    );
+  }
+
+  Widget _buildProfileStatCard(String label, int count, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            count.toString(),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: color.withOpacity(0.8)),
+          ),
+        ],
+      ),
+    );
   }
 
 

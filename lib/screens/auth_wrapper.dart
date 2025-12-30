@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import 'auth_screen.dart';
 import 'tailor_dashboard.dart';
 import 'customer_dashboard.dart';
+import '../widgets/animated_sewing_loader.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -18,8 +19,8 @@ class AuthWrapper extends StatelessWidget {
         // Show loading while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
+            body: AnimatedSewingLoader(
+              message: 'Authenticating...',
             ),
           );
         }
@@ -95,8 +96,8 @@ class _RoleBasedDashboardState extends State<_RoleBasedDashboard> {
         // Show loading while fetching role
         if (snapshot.connectionState == ConnectionState.waiting && !_roleSet) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
+            body: AnimatedSewingLoader(
+              message: 'Loading your profile...',
             ),
           );
         }

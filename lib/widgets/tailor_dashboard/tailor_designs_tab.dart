@@ -427,7 +427,7 @@ class _TailorDesignsTabState extends State<TailorDesignsTab> {
                               final base64String = base64Encode(bytes);
                               photoUrl = 'data:image/jpeg;base64,$base64String';
                             } catch (e) {
-                              print('Error encoding image: \$e');
+                              debugPrint('Error encoding image: $e');
                             }
                         }
 

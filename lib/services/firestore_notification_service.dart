@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/notification.dart';
 
@@ -60,12 +61,42 @@ class FirestoreNotificationService {
   }
 
   Stream<List<AppNotification>> streamUserNotifications(String userId) {
-    return _collection
+    final controller = StreamController<List<AppNotification>>();
+    StreamSubscription? sub;
+
+    void startFallback() {
+      sub = _collection
+          .where('userId', isEqualTo: userId)
+          .limit(50)
+          .snapshots()
+          .listen(
+            (snap) {
+              final list = snap.docs.map(_fromDoc).toList();
+              list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              controller.add(list);
+            },
+            onError: (e) => controller.addError(e),
+            onDone: () => controller.close(),
+          );
+    }
+
+    sub = _collection
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .limit(50)
         .snapshots()
-        .map((snap) => snap.docs.map(_fromDoc).toList());
+        .listen(
+          (snap) => controller.add(snap.docs.map(_fromDoc).toList()),
+          onError: (e) {
+            print('Notifications Stream Index Error, falling back: $e');
+            sub?.cancel();
+            startFallback();
+          },
+          onDone: () => controller.close(),
+        );
+
+    controller.onCancel = () => sub?.cancel();
+    return controller.stream;
   }
 
   Stream<int> streamUnreadCount(String userId) {

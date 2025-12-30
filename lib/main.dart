@@ -19,8 +19,8 @@ void main() async {
   // Global error handler to catch and log Firestore assertion errors without crashing the UI
   FlutterError.onError = (FlutterErrorDetails details) {
     if (details.exception.toString().contains('FIRESTORE')) {
-      debugPrint('Caught Firestore Background Error: ${details.exception}');
-      return; 
+      debugPrint('🚨 FIRESTORE ERROR DETECTED: ${details.exception}');
+      // Don't return, let it be presented to the console/UI if possible
     }
     FlutterError.presentError(details);
   };

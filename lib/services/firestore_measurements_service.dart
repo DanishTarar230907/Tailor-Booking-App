@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart'; // For kDebugMode
 import '../models/measurement.dart';
 
 class FirestoreMeasurementsService {
@@ -110,21 +111,20 @@ class FirestoreMeasurementsService {
   }
 
   Future<Measurement?> getByCustomerEmail(String email) async {
-    print('DEBUG: Service getByCustomerEmail called for: "$email"');
+    if (kDebugMode) print('DEBUG: Service getByCustomerEmail called for: "$email"');
+
+    // Query 'measurements' collection instead of 'users' subcollection
+    // Try to get by email from root 'measurements' if we move to root collection
     try {
-      // WORKAROUND: CollectionGroup queries with 'where' require an index.
-      // To avoid forcing the user to create an index right now, we will fetch all 
-      // and filter in memory. This is fine for low volume.
-      
-      print('DEBUG: Fetching all measurements to filter in-memory (bypassing index)...');
-      final snap = await _firestore.collectionGroup('measurements').get();
-      
-      print('DEBUG: Total docs found: ${snap.size}');
-      
+      if (kDebugMode) print('DEBUG: Fetching all measurements to filter in-memory (bypassing index)...');
+      // Temporary workaround: Fetch all and filter in memory to avoid index issues during dev
+      final snap = await _firestore.collection('measurements').get();
+      if (kDebugMode) print('DEBUG: Total docs found: ${snap.size}');
+
       // DEBUG: Print all documents to see what's actually stored
       for (var doc in snap.docs) {
         final data = doc.data();
-        print('DEBUG: Doc ${doc.id} has customerEmail: "${data['customerEmail']}" (looking for: "$email")');
+        if (kDebugMode) print('DEBUG: Doc ${doc.id} has customerEmail: "${data['customerEmail']}" (looking for: "$email")');
       }
       
       final matches = snap.docs.where((doc) {
@@ -133,7 +133,7 @@ class FirestoreMeasurementsService {
         return data['customerEmail'] == email;
       }).toList();
 
-      print('DEBUG: Found ${matches.length} matches for $email');
+      if (kDebugMode) print('DEBUG: Found ${matches.length} matches for $email');
 
       if (matches.isEmpty) return null;
       

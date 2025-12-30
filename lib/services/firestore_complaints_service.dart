@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/complaint.dart';
 import 'firebase_storage_service.dart';
@@ -19,10 +20,36 @@ class FirestoreComplaintsService {
   }
 
   Stream<List<Complaint>> streamComplaints() {
-    return _collection
+    final controller = StreamController<List<Complaint>>();
+    StreamSubscription? sub;
+
+    void startFallback() {
+      sub = _collection.snapshots().listen(
+        (snap) {
+          final list = snap.docs.map(_fromDoc).toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          controller.add(list);
+        },
+        onError: (e) => controller.addError(e),
+        onDone: () => controller.close(),
+      );
+    }
+
+    sub = _collection
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(_fromDoc).toList());
+        .listen(
+          (snap) => controller.add(snap.docs.map(_fromDoc).toList()),
+          onError: (e) {
+            print('Complaints Stream Index Error, falling back: $e');
+            sub?.cancel();
+            startFallback();
+          },
+          onDone: () => controller.close(),
+        );
+
+    controller.onCancel = () => sub?.cancel();
+    return controller.stream;
   }
 
   Future<List<Complaint>> getAllComplaints() async {
@@ -51,11 +78,41 @@ class FirestoreComplaintsService {
   }
 
   Stream<List<Complaint>> getComplaintsForCustomer(String customerId) {
-    return _collection
+    StreamController<List<Complaint>> controller = StreamController<List<Complaint>>();
+    StreamSubscription? sub;
+
+    void startFallback() {
+      sub = _collection
+          .where('customerId', isEqualTo: customerId)
+          .snapshots()
+          .listen(
+            (snap) {
+              final list = snap.docs.map(_fromDoc).toList();
+              list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              controller.add(list);
+            },
+            onError: (e) => controller.addError(e),
+            onDone: () => controller.close(),
+          );
+    }
+
+    sub = _collection
         .where('customerId', isEqualTo: customerId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(_fromDoc).toList());
+        .map((snap) => snap.docs.map(_fromDoc).toList())
+        .listen(
+          (data) => controller.add(data),
+          onError: (e) {
+            print('Complaint Stream Error, falling back: $e');
+            sub?.cancel();
+            startFallback();
+          },
+          onDone: () => controller.close(),
+        );
+
+    controller.onCancel = () => sub?.cancel();
+    return controller.stream;
   }
 
   // Alias for legacy support if needed, but fileComplaint was requested in error log

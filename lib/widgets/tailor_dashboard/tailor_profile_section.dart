@@ -10,6 +10,7 @@ import '../../models/tailor.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_tailor_service.dart';
 import '../../widgets/unified_profile_card.dart';
+import '../../utils/app_validators.dart';
 
 /// [Purpose]
 /// This widget handles the display and editing of the Tailor's profile information.
@@ -74,6 +75,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
     final gmailController = TextEditingController(text: widget.email);
     final locationController = TextEditingController(text: widget.location);
     final hoursController = TextEditingController(text: widget.shopHours);
+    final _formKey = GlobalKey<FormState>(); // Added FormKey
     XFile? selectedImage;
     bool isUploading = false;
 
@@ -97,7 +99,9 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                 borderRadius: BorderRadius.horizontal(left: Radius.circular(30)),
               ),
               child: StatefulBuilder(
-                builder: (context, setPanelState) => Column(
+                builder: (context, setPanelState) => Form(
+                  key: _formKey,
+                  child: Column(
                   children: [
                     // Header
                     Container(
@@ -189,9 +193,9 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                             
                             const Text('Personal Info', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('Full Name', nameController, Icons.person_outline),
+                            _buildSidePanelField('Full Name', nameController, Icons.person_outline, validator: AppValidators.validateName),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('Business Description', descController, Icons.description_outlined, maxLines: 3),
+                            _buildSidePanelField('Business Description', descController, Icons.description_outlined, maxLines: 3, validator: (v) => AppValidators.validateRequired(v, 'Description'), keyboardType: TextInputType.multiline),
                             
                              const SizedBox(height: 32),
                             const Text('Shop Announcements', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
@@ -208,7 +212,8 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                                 children: [
                                   const Text('Visible to all customers on their dashboard', style: TextStyle(fontSize: 12, color: Colors.orange)),
                                   const SizedBox(height: 8),
-                                  _buildSidePanelField('Current Announcement', announcementController, Icons.campaign_outlined, maxLines: 2),
+                                  const SizedBox(height: 8),
+                                  _buildSidePanelField('Current Announcement', announcementController, Icons.campaign_outlined, maxLines: 2, keyboardType: TextInputType.multiline),
                                 ],
                               ),
                             ),
@@ -216,18 +221,18 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                             const SizedBox(height: 32),
                             const Text('Contact Details', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('Phone Number', phoneController, Icons.phone_outlined),
+                            _buildSidePanelField('Phone Number', phoneController, Icons.phone_outlined, validator: AppValidators.validatePhone, keyboardType: TextInputType.phone),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('WhatsApp', whatsappController, Icons.chat_bubble_outline),
+                            _buildSidePanelField('WhatsApp', whatsappController, Icons.chat_bubble_outline, validator: AppValidators.validateOptionalPhone, keyboardType: TextInputType.phone),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('Email Address', gmailController, Icons.email_outlined),
+                            _buildSidePanelField('Email Address', gmailController, Icons.email_outlined, validator: AppValidators.validateEmail, keyboardType: TextInputType.emailAddress),
                             
                             const SizedBox(height: 32),
                             const Text('Shop Details', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('Shop Location', locationController, Icons.location_on_outlined),
+                            _buildSidePanelField('Shop Location', locationController, Icons.location_on_outlined, validator: (v) => AppValidators.validateRequired(v, 'Location')),
                             const SizedBox(height: 16),
-                            _buildSidePanelField('Business Hours', hoursController, Icons.access_time),
+                            _buildSidePanelField('Business Hours', hoursController, Icons.access_time, validator: (v) => AppValidators.validateRequired(v, 'Hours')),
                             const SizedBox(height: 40),
                           ],
                         ),
@@ -249,6 +254,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                       ),
                       child: ElevatedButton(
                         onPressed: isUploading ? null : () async {
+                          if (!_formKey.currentState!.validate()) return; // Validate
                           setPanelState(() => isUploading = true);
                           try {
                              String? photoUrl = widget.tailor?.photo;
@@ -256,9 +262,9 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                               try {
                                 final bytes = await selectedImage!.readAsBytes();
                                 final base64String = base64Encode(bytes);
-                                photoUrl = 'data:image/jpeg;base64,\$base64String';
+                                photoUrl = 'data:image/jpeg;base64,$base64String';
                               } catch (e) {
-                                print('Error encoding image: \$e');
+                                debugPrint('Error encoding image: $e');
                               }
                             }
 
@@ -315,7 +321,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
                             if (mounted) {
                               setPanelState(() => isUploading = false);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+                                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
                               );
                             }
                           }
@@ -337,7 +343,8 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
               ),
             ),
           ),
-        );
+        ),
+      );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(
@@ -353,9 +360,11 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
 
   /// [Purpose]
   /// Helper to build consistent text fields in the side panel.
-  Widget _buildSidePanelField(String label, TextEditingController controller, IconData icon, {int maxLines = 1}) {
-    return TextField(
+  Widget _buildSidePanelField(String label, TextEditingController controller, IconData icon, {int maxLines = 1, String? Function(String?)? validator, TextInputType? keyboardType}) {
+    return TextFormField( // Changed to TextFormField
       controller: controller,
+      validator: validator, // Added validator support
+      keyboardType: keyboardType, // Added keyboardType support
       maxLines: maxLines,
       style: const TextStyle(fontWeight: FontWeight.w500),
       decoration: InputDecoration(
@@ -366,6 +375,14 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey[200]!),
+        ),
+        errorBorder: OutlineInputBorder( // Added Error Border style
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -399,7 +416,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
         return CachedNetworkImageProvider(photo);
       }
     } catch (e) {
-      print('Error loading profile image: \$e');
+      debugPrint('Error loading profile image: $e');
       return null;
     }
     
@@ -463,7 +480,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
           onTap: () async {
             if (widget.whatsapp.isNotEmpty) {
               final clean = widget.whatsapp.replaceAll(RegExp(r'[^0-9]'), '');
-              final url = Uri.parse('https://wa.me/\$clean');
+              final url = Uri.parse('https://wa.me/$clean');
               if (await canLaunchUrl(url)) launchUrl(url);
             }
           },
@@ -474,7 +491,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
           color: const Color(0xFF1f455b),
           onTap: () async {
             if (widget.phone.isNotEmpty) {
-               final url = Uri.parse('tel:\${widget.phone}');
+               final url = Uri.parse('tel:${widget.phone}');
               if (await canLaunchUrl(url)) launchUrl(url);
             }
           },
@@ -486,7 +503,7 @@ class _TailorProfileSectionState extends State<TailorProfileSection> {
           onTap: () async {
             if (widget.location.isNotEmpty) {
               final query = Uri.encodeComponent(widget.location);
-              final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=\$query');
+              final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
               if (await canLaunchUrl(url)) launchUrl(url, mode: LaunchMode.externalApplication);
             }
           },

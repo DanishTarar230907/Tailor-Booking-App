@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -82,10 +83,10 @@ class AuthService {
   // Get user role from Firestore
   Future<String?> getUserRole(String uid) async {
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get().timeout(const Duration(seconds: 15));
       return doc.data()?['role'] as String?;
     } catch (e) {
-      print('Error getting user role: $e');
+      if (kDebugMode) debugPrint('🚨 Firestore Error getting user role ($uid): $e');
       return null;
     }
   }
@@ -93,10 +94,10 @@ class AuthService {
   // Get user data from Firestore
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get().timeout(const Duration(seconds: 15));
       return doc.data();
     } catch (e) {
-      print('Error getting user data: $e');
+      if (kDebugMode) debugPrint('🚨 Firestore Error getting user data ($uid): $e');
       return null;
     }
   }
@@ -115,7 +116,7 @@ class AuthService {
         'role': role,
       }, SetOptions(merge: true));
     } catch (e) {
-      print('Error updating user role: $e');
+      if (kDebugMode) debugPrint('Error updating user role: $e');
     }
   }
 
@@ -124,7 +125,7 @@ class AuthService {
     try {
       await _firestore.collection('users').doc(uid).set(data, SetOptions(merge: true));
     } catch (e) {
-      print('Error updating user data: $e');
+      if (kDebugMode) debugPrint('Error updating user data: $e');
     }
   }
 

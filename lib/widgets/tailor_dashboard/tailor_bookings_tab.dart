@@ -58,6 +58,7 @@ class _TailorBookingsTabState extends State<TailorBookingsTab> {
                   ),
                   if (isNarrow) const SizedBox(height: 12),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: isNarrow ? MainAxisAlignment.center : MainAxisAlignment.end,
                     children: [
                       // Settings Button
@@ -67,19 +68,17 @@ class _TailorBookingsTabState extends State<TailorBookingsTab> {
                         tooltip: 'Configure Booking Window',
                       ),
                       const SizedBox(width: 8),
-                      Flexible(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showAddBookingDialog(),
-                          icon: const Icon(Icons.add),
-                          label: const Text(
-                            'Add Booking',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple,
-                            foregroundColor: Colors.white,
-                          ),
+                      ElevatedButton.icon(
+                        onPressed: () => _showAddBookingDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text(
+                          'Add Booking',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ],

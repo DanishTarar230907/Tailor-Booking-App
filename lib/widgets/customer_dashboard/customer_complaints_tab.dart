@@ -27,6 +27,7 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
   final FirestoreComplaintsService _complaintsService = FirestoreComplaintsService();
   final _complaintSubjectController = TextEditingController();
   final _complaintMessageController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool _isSubmittingComplaint = false;
 
   @override
@@ -37,10 +38,7 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
   }
 
   Future<void> _submitComplaint() async {
-    if (_complaintSubjectController.text.isEmpty || _complaintMessageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -94,7 +92,9 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
           ),
         ],
       ),
-      child: Column(
+      child: Form(
+        key: _formKey,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
@@ -102,8 +102,9 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          TextField(
+          TextFormField(
             controller: _complaintSubjectController,
+            validator: (v) => v!.isEmpty ? 'Subject is required' : null,
             decoration: InputDecoration(
               hintText: 'Subject',
               filled: true,
@@ -115,9 +116,10 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
+          TextFormField(
             controller: _complaintMessageController,
             maxLines: 4,
+            validator: (v) => v!.isEmpty ? 'Message is required' : null,
             decoration: InputDecoration(
               hintText: 'Describe your issue...',
               filled: true,
@@ -149,6 +151,7 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -158,70 +161,144 @@ class _CustomerComplaintsTabState extends State<CustomerComplaintsTab> {
 
     switch (complaint.status.toLowerCase()) {
       case 'resolved':
+      case 'approved':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
         break;
       case 'pending':
+      case 'open':
         statusColor = Colors.orange;
         statusIcon = Icons.pending;
         break;
-      default:
+      case 'in_progress':
         statusColor = Colors.blue;
         statusIcon = Icons.info;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.help_outline;
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: statusColor, width: 4)),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.1),
-          child: Icon(statusIcon, color: statusColor, size: 20),
-        ),
-        title: Text(
-          complaint.subject,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(complaint.message, maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 8),
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: CircleAvatar(
+              backgroundColor: statusColor.withOpacity(0.1),
+              child: Icon(statusIcon, color: statusColor, size: 24),
+            ),
+            title: Text(
+              complaint.subject,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 4),
+                Text(
+                  _formatDate(complaint.createdAt),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  complaint.message,
+                  style: const TextStyle(color: Colors.black87),
+                ),
+                const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     complaint.status.toUpperCase(),
                     style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  _formatDate(complaint.createdAt),
-                  style: TextStyle(fontSize: 11, color: Colors.grey[400]),
-                ),
               ],
             ),
+          ),
+          if (complaint.replies.isNotEmpty || (complaint.reply != null && complaint.reply!.isNotEmpty)) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Row(
+                    children: [
+                      Icon(Icons.reply, size: 16, color: Colors.blue[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tailor Replies',
+                        style: TextStyle(
+                          fontSize: 13, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.blue[700]
+                        ),
+                      ),
+                    ],
+                  ),
+                   const SizedBox(height: 12),
+                  // Legacy reply
+                  if (complaint.reply != null && complaint.reply!.isNotEmpty && complaint.replies.isEmpty)
+                    _buildReplyBubble('Tailor', complaint.reply!, true),
+                  
+                  // Modern replies
+                  ...complaint.replies.map((r) => _buildReplyBubble(r.senderName, r.message, r.isFromTailor)),
+                ],
+              ),
+            ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyBubble(String sender, String message, bool isFromTailor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isFromTailor ? Colors.blue[50] : Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isFromTailor ? Colors.blue[100]! : Colors.grey[200]!,
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            sender,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isFromTailor ? Colors.blue[800] : Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            style: const TextStyle(fontSize: 13, color: Colors.black87),
+          ),
+        ],
       ),
     );
   }

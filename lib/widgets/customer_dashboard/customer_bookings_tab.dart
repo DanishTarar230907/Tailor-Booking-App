@@ -100,8 +100,8 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
               // No Settings Icon here as per request
               ElevatedButton.icon(
                 onPressed: _scrollToFirstAvailable,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Booking'),
+                icon: const Icon(Icons.arrow_downward, size: 18),
+                label: const Text('Choose Your Slot'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9333EA), // Purple
                   foregroundColor: Colors.white,
@@ -118,6 +118,7 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
 
   Widget _buildDaySection(DateTime date) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, // Ensure slots take full width
       children: [
         // Date Header
         Container(
@@ -125,24 +126,37 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
           margin: const EdgeInsets.only(bottom: 12, top: 8),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF9333EA), // Purple
-            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9333EA), Color(0xFF6B21A8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9333EA).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
               Text(
-                DateFormat('E').format(date),
+                DateFormat('EEEE').format(date).toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  letterSpacing: 1.2,
+                  fontSize: 12,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
-                DateFormat('d').format(date),
+                DateFormat('d MMMM, yyyy').format(date),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -152,7 +166,7 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
         
         // Slots
         ..._timeSlots.map((slot) => _buildSlotCard(date, slot)).toList(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -176,24 +190,65 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
     final isMyBooking = booking.userId == FirebaseAuth.instance.currentUser?.uid;
 
     if (isAvailable) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: InkWell(
-          onTap: () => _showConfirmationDialog(date, slotTime),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7), // Light Green
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.shade200),
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(slotTime, style: TextStyle(color: Colors.green.shade800, fontSize: 12)),
-                const Icon(Icons.add, color: Colors.green, size: 28),
-              ],
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showConfirmationDialog(date, slotTime),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.add_circle_outline, color: Color(0xFF22C55E), size: 24),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          slotTime,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 16,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Available for Booking',
+                          style: TextStyle(
+                            color: Color(0xFF15803D), 
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFFCBD5E1)),
+                ],
+              ),
             ),
           ),
         ),
@@ -203,32 +258,103 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
     if (isMyBooking) {
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFBEB), // Cream/Yellowish
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.shade200, width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(slotTime, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          gradient: LinearGradient(
+            colors: [const Color(0xFFFFF7ED), Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFED7AA), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFF97316).withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEDD5),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.stars, color: Color(0xFFF97316), size: 26),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.person, color: Colors.orange),
-                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        slotTime,
+                        style: TextStyle(
+                          color: Colors.grey.shade600, 
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF97316),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'YOUR APPOINTMENT',
+                          style: TextStyle(
+                            color: Colors.white, 
+                            fontSize: 9, 
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     booking.customerName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 17,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
                   Text(
                     booking.suitType,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    style: TextStyle(
+                      color: Colors.grey.shade600, 
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: booking.status == 'approved' ? const Color(0xFFEFF6FF) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: booking.status == 'approved' ? const Color(0xFFBFDBFE) : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Text(
+                booking.status.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10, 
+                  fontWeight: FontWeight.bold,
+                  color: booking.status == 'approved' ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                ),
               ),
             ),
           ],
@@ -238,19 +364,41 @@ class _CustomerBookingsTabState extends State<CustomerBookingsTab> {
     
     // Other's Booking (Unavailable)
      return Container(
-        height: 60,
         margin: const EdgeInsets.only(bottom: 12),
-        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          color: const Color(0xFFF1F5F9).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-             Text(slotTime, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-             const Text('RESERVED', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
+            const Icon(Icons.lock_person_outlined, color: Color(0xFF94A3B8), size: 22),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    slotTime,
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8), 
+                      fontSize: 15, 
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Text(
+                    'SCHEDULED',
+                    style: TextStyle(
+                      color: Color(0xFF64748B), 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 10, 
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       );

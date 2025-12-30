@@ -43,6 +43,7 @@ import '../services/firebase_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/status_badge.dart';
 import 'package:intl/intl.dart';
+import '../widgets/animated_sewing_loader.dart';
 
 class TailorDashboard extends StatefulWidget {
   const TailorDashboard({super.key});
@@ -264,8 +265,18 @@ class _TailorDashboardState extends State<TailorDashboard>
         });
       }
     } catch (e) {
-      print('Error loading data: $e');
-      setState(() => _isLoading = false);
+      debugPrint('🚨 ERROR LOADING TAILOR DASHBOARD DATA: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Database Error: ${e.toString().split(':').last.trim()}'),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _loadData),
+          ),
+        );
+      }
     }
   }
 
@@ -343,13 +354,9 @@ class _TailorDashboardState extends State<TailorDashboard>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).colorScheme.primary,
-            ),
-          ),
+      return const Scaffold(
+        body: AnimatedSewingLoader(
+          message: 'Loading Studio Dashboard...',
         ),
       );
     }
