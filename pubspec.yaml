@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  drift: ^2.14.1
-  sqlite3: ^2.4.0
+  drift: ^2.20.0
+  sqlite3: ^2.4.6
   path_provider: ^2.1.1
   path: ^1.8.3
   cupertino_icons: ^1.0.6
