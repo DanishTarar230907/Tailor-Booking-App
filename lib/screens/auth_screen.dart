@@ -74,6 +74,36 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      
+      if (userCredential != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Signed in with Google successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _showForgotPasswordDialog() async {
     final emailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -411,6 +441,69 @@ class _AuthScreenState extends State<AuthScreen> {
                               color: colorScheme.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
+                            ),
+                          ),
+                        ),
+                        
+                        // Divider
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Colors.grey[400])),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'OR',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Expanded(child: Divider(color: Colors.grey[400])),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Google Sign-In Button
+                        Container(
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.grey[300]!),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isLoading ? null : _handleGoogleSignIn,
+                              borderRadius: BorderRadius.circular(14),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.network(
+                                    'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                                    height: 24,
+                                    width: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Continue with Google',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
