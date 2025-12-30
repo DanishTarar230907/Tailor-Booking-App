@@ -91,6 +91,52 @@ class AuthService {
     }
   }
 
+  // Reset password directly (custom implementation)
+  Future<void> resetPasswordDirectly({
+    required String email,
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      // Re-authenticate user first
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: oldPassword,
+      );
+      
+      await _auth.currentUser?.reauthenticateWithCredential(credential);
+      
+      // Update password
+      await _auth.currentUser?.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw 'An error occurred: $e';
+    }
+  }
+
+  // Reset password for any user (admin function - requires sign in)
+  Future<void> resetPasswordForUser({
+    required String email,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      // Sign in with current credentials
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: currentPassword,
+      );
+      
+      // Update password
+      await credential.user?.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw 'An error occurred: $e';
+    }
+  }
+
   // Get user role from Firestore
   Future<String?> getUserRole(String uid) async {
     try {
