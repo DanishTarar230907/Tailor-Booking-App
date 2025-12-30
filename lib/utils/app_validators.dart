@@ -22,9 +22,9 @@ class AppValidators {
       return '❌ Email is required. Please enter your email address.';
     }
     
-    // Check if email contains alphabets
-    if (!value.contains(RegExp(r'[a-zA-Z]'))) {
-      return '❌ Email must contain alphabetic characters (e.g., user@example.com)';
+    // Strict Domain Check: Only allow Google emails
+    if (!value.toLowerCase().endsWith('@gmail.com') && !value.toLowerCase().endsWith('@googlemail.com')) {
+      return '❌ Only Google emails (@gmail.com) are allowed.';
     }
     // 1. Basic format check
     if (!_emailRegex.hasMatch(value)) {

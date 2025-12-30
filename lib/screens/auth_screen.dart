@@ -126,8 +126,9 @@ class _AuthScreenState extends State<AuthScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '🔐 Reset Your Password\n\n'
-                'Enter your email address. We will send you a secure link to reset your password.',
+                '🔐 Reset Password\n\n'
+                '• If you use **Google Sign-In**: You don\'t need to reset a password here. Google handles it securely (OTP, etc).\n'
+                '• If you created a **separate password** for this app: Enter your @gmail.com address below to receive a reset link.',
                 style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
               ),
               const SizedBox(height: 20),
