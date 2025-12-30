@@ -76,180 +76,91 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _showForgotPasswordDialog() async {
     final emailController = TextEditingController();
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    bool obscureCurrentPassword = true;
-    bool obscureNewPassword = true;
-    bool obscureConfirmPassword = true;
 
     return showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Icon(Icons.lock_reset, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12),
-              const Text('Reset Password'),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '🔐 Reset Your Password\n\nEnter your email and current password, then create a new password.',
-                    style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Email field
-                  TextFormField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email Address',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: AppValidators.validateEmail,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Current password field
-                  TextFormField(
-                    controller: currentPasswordController,
-                    obscureText: obscureCurrentPassword,
-                    decoration: InputDecoration(
-                      labelText: 'Current Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureCurrentPassword ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() => obscureCurrentPassword = !obscureCurrentPassword);
-                        },
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '❌ Current password is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // New password field
-                  TextFormField(
-                    controller: newPasswordController,
-                    obscureText: obscureNewPassword,
-                    decoration: InputDecoration(
-                      labelText: 'New Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureNewPassword ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() => obscureNewPassword = !obscureNewPassword);
-                        },
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: AppValidators.validatePassword,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Confirm password field
-                  TextFormField(
-                    controller: confirmPasswordController,
-                    obscureText: obscureConfirmPassword,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm New Password',
-                      prefixIcon: const Icon(Icons.lock_clock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() => obscureConfirmPassword = !obscureConfirmPassword);
-                        },
-                      ),
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '❌ Please confirm your new password';
-                      }
-                      if (value != newPasswordController.text) {
-                        return '❌ Passwords do not match! Please re-enter.';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  try {
-                    // Reset password using the new method
-                    await _authService.resetPasswordForUser(
-                      email: emailController.text.trim(),
-                      currentPassword: currentPasswordController.text,
-                      newPassword: newPasswordController.text,
-                    );
-                    
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            '✅ Password reset successful!\n'
-                            'You can now login with your new password.',
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 5),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('❌ Error: ${e.toString()}'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 5),
-                        ),
-                      );
-                    }
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Reset Password'),
-            ),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.lock_reset, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            const Text('Reset Password'),
           ],
         ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '🔐 Reset Your Password\n\n'
+                'Enter your email address. We will send you a secure link to reset your password.',
+                style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+              
+              // Email field
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+                validator: AppValidators.validateEmail,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  // Send password reset email
+                  await _authService.sendPasswordResetEmail(emailController.text.trim());
+                  
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '✅ Password reset email sent!\n'
+                          'Check your inbox and click the link to set a new password.',
+                        ),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Error: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Send Reset Link'),
+          ),
+        ],
       ),
     );
   }
