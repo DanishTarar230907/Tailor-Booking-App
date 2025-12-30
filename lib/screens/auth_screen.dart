@@ -34,29 +34,53 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+
     try {
       if (_isLogin) {
-        await _authService.signIn(
-          email: _emailController.text,
-          password: _passwordController.text,
+        final result = await _authService.signIn(
+          email: email,
+          password: password,
         );
+        
+        if (result is ManualUserCredential && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Identity Verified via Firestore Sync!'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       } else {
         await _authService.signUp(
-          email: _emailController.text,
-          password: _passwordController.text,
-          name: _nameController.text,
+          email: email,
+          password: password,
+          name: name,
         );
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = e.toString();
+        // Clean up common error strings
+        if (errorMessage.contains('Exception: ')) errorMessage = errorMessage.replaceFirst('Exception: ', '');
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(errorMessage), 
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
@@ -87,30 +111,40 @@ class _AuthScreenState extends State<AuthScreen> {
         builder: (context, setStateDialog) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(step == 1 ? 'Find Account' : 'Set New Password'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (step == 1) ...[
-                  const Text('Enter your registered email to search for your account.'),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                    validator: AppValidators.validateEmail,
-                  ),
-                ] else ...[
-                  const Text('Account found! Enter your new password below.'),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: newPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'New Password', border: OutlineInputBorder()),
-                    validator: AppValidators.validatePassword,
-                  ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (step == 1) ...[
+                    const Text('Enter your registered email to search for your account.'),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email', 
+                        border: OutlineInputBorder(),
+                        errorMaxLines: 5,
+                      ),
+                      validator: AppValidators.validateEmail,
+                    ),
+                  ] else ...[
+                    const Text('Account found! Enter your new password below.'),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: newPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'New Password', 
+                        border: OutlineInputBorder(),
+                        errorMaxLines: 5,
+                      ),
+                      validator: AppValidators.validatePassword,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           actions: [
@@ -119,24 +153,34 @@ class _AuthScreenState extends State<AuthScreen> {
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 
+                final email = emailController.text.trim();
+                final password = newPasswordController.text.trim();
+
                 if (step == 1) {
                   setStateDialog(() => step = 2);
                 } else {
                   try {
-                    await _authService.updateFirestorePassword(
-                      emailController.text,
-                      newPasswordController.text,
-                    );
+                    await _authService.updateFirestorePassword(email, password);
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('✅ Password updated! Use it to login now.'), backgroundColor: Colors.green),
+                        const SnackBar(
+                          content: Text('✅ Password updated! Logging you in...'), 
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
                       );
+                      // No need to call _handleSubmit() anymore.
+                      // AuthService.updateFirestorePassword now establishes the session automatically.
                     }
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                        SnackBar(
+                          content: Text(e.toString()), 
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
                       );
                     }
                   }

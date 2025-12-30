@@ -117,6 +117,7 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
+          errorMaxLines: 3,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: Colors.grey.shade300),
