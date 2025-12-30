@@ -521,28 +521,44 @@ class _CustomerDashboardState extends State<CustomerDashboard>
           ],
         ),
       ),
-      bottomNavigationBar: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 360;
-          return BottomNavigationBar(
-            currentIndex: _selectedTabIndex,
-            onTap: (index) => setState(() => _selectedTabIndex = index),
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: const Color(0xFF4F46E5),
-            unselectedItemColor: Colors.grey[600],
-            selectedFontSize: isNarrow ? 10 : 12,
-            unselectedFontSize: isNarrow ? 9 : 10,
-            iconSize: isNarrow ? 20 : 24,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.checkroom), label: 'Designs'),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Bookings'),
-              BottomNavigationBarItem(icon: Icon(Icons.straighten), label: 'Measure'),
-              BottomNavigationBarItem(icon: Icon(Icons.local_shipping), label: 'Pickup'),
-              BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Issues'),
-            ],
-          );
-        },
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedTabIndex,
+        onDestinationSelected: (index) => setState(() => _selectedTabIndex = index),
+        backgroundColor: Colors.white,
+        indicatorColor: const Color(0xFF4F46E5).withOpacity(0.1),
+        height: 65,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Profile',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.checkroom_outlined),
+            selectedIcon: Icon(Icons.checkroom),
+            label: 'Designs',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today),
+            label: 'Bookings',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.straighten_outlined),
+            selectedIcon: Icon(Icons.straighten),
+            label: 'Measure',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.local_shipping_outlined),
+            selectedIcon: Icon(Icons.local_shipping),
+            label: 'Pickup',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum),
+            label: 'Complaints',
+          ),
+        ],
       ),
     );
   }

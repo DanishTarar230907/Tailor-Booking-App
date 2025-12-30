@@ -80,6 +80,17 @@ class AuthService {
     await _auth.signOut();
   }
 
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw 'An error occurred: $e';
+    }
+  }
+
   // Get user role from Firestore
   Future<String?> getUserRole(String uid) async {
     try {
